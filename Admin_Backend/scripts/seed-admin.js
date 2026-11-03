@@ -4,6 +4,7 @@ if (!process.env.MONGO_URI) {
 }
 require('dotenv').config();
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 const User = require('../src/models/user.model');
 const { connectDatabase } = require('../src/config/database');
 
@@ -27,7 +28,7 @@ const createAdmin = async () => {
   const admin = new User({
     _id: `ADMIN${String(count + 1).padStart(3, '0')}`,
     email,
-    password,
+    password: await bcrypt.hash(password, 12),
     fullName: name,
     role: 'ADMIN',
     status: 'Active',
@@ -36,7 +37,7 @@ const createAdmin = async () => {
     mfaEnabled: false,
     passwordChangeRequired: true
   });
-  await admin.save({ validateBeforeSave: false });
+  await admin.save();
   console.log(`Admin created: ${email}`);
 };
 

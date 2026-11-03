@@ -79,21 +79,23 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    const logoutRequest = adminApi.auth.logout();
+    clearAuth();
     try {
-      await adminApi.auth.logout();
+      await logoutRequest;
     } catch (err) {
       console.warn('Logout API call failed:', err);
-    } finally {
-      clearAuth();
     }
   };
 
   const changePassword = async (currentPassword, newPassword) => {
     setError(null);
     try {
-      await adminApi.auth.changePassword({ currentPassword, newPassword });
-      const data = await adminApi.auth.me();
-      setUser(data);
+      const data = await adminApi.auth.changePassword({ currentPassword, newPassword });
+      if (!data.success || data.user?.role !== 'ADMIN' || data.user.passwordChangeRequired) {
+        throw new ApiError(data.message || 'Password change was not confirmed by the server.', 409, data);
+      }
+      setUser(data.user);
       return true;
     } catch (err) {
       if (err instanceof ApiError) {

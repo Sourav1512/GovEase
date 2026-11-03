@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { opportunitiesApi } from '../api/examsApi';
 import { MdBusiness, MdLocationOn, MdWork, MdCalendarToday, MdPerson, MdStar, MdAttachMoney, MdAccessTime, MdArrowForward, MdVerified, MdOutlineWorkOutline } from 'react-icons/md';
 import './ExamsPage.css';
@@ -38,11 +38,12 @@ const asList = (value) => {
 
 export default function OpportunitiesPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [query, setQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
+  const typeFilter = searchParams.get('type') || '';
 
   useEffect(() => {
     setLoading(true);
@@ -77,7 +78,12 @@ export default function OpportunitiesPage() {
         <select
           className="form-input"
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
+          onChange={(e) => {
+            const nextParams = new URLSearchParams(searchParams);
+            if (e.target.value) nextParams.set('type', e.target.value);
+            else nextParams.delete('type');
+            setSearchParams(nextParams);
+          }}
           style={{ maxWidth: 200 }}
         >
           <option value="">All types</option>

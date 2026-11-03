@@ -6,9 +6,14 @@ export const register = async (userData) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(userData)
   });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.message || data.errors?.[0]?.msg || 'Registration failed');
+    const backendErrors = Array.isArray(data.errors) ? data.errors.map((error) => error.msg).filter(Boolean) : [];
+    const errorMessage = backendErrors.length ? backendErrors.join(' ') : data.message || 'Registration failed';
+    const error = new Error(errorMessage);
+    error.data = data;
+    error.backendErrors = backendErrors;
+    throw error;
   }
   return data;
 };

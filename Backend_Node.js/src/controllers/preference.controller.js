@@ -6,7 +6,7 @@ class PreferenceController {
       const { userId } = req.params;
       const preference = await UserPreference.findOne({ userId });
       if (!preference) {
-        return res.status(404).json({ success: false, message: 'Preferences not found' });
+        return res.json({ success: true, preference: null });
       }
       res.json({ success: true, preference });
     } catch (error) {

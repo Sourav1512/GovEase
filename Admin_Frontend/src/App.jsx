@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -21,6 +21,7 @@ import AdminApplications from './pages/AdminApplications';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
   
   if (loading) {
     return (
@@ -34,7 +35,7 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
   
-  if (user?.passwordChangeRequired) {
+  if (user?.passwordChangeRequired && location.pathname !== '/password-change') {
     return <Navigate to="/password-change" replace />;
   }
   
@@ -42,7 +43,7 @@ function ProtectedRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   
   if (loading) {
     return (
@@ -53,7 +54,7 @@ function PublicRoute({ children }) {
   }
   
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={user?.passwordChangeRequired ? '/password-change' : '/dashboard'} replace />;
   }
   
   return children;
@@ -77,7 +78,8 @@ function App() {
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<Dashboard />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="users" element={<Users />} />
         <Route path="users/:id" element={<UserDetail />} />
         <Route path="eligibility-rules" element={<EligibilityRules />} />
@@ -96,6 +98,7 @@ function App() {
         <Route path="applications" element={<AdminApplications />} />
         <Route path="audit-logs" element={<AuditLogs />} />
       </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

@@ -1,4 +1,5 @@
 const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcrypt');
 const User = require('../models/user.model');
 const jwtService = require('../services/jwt.service');
 const { logAudit } = require('../services/audit.service');
@@ -10,7 +11,7 @@ const loginValidation = [
 
 const changePasswordValidation = [
   body('currentPassword').notEmpty().withMessage('Current password is required'),
-  body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
+  body('newPassword').isLength({ min: 12 }).withMessage('New password must be at least 12 characters')
 ];
 
 const serializeUser = (user) => {
@@ -18,6 +19,14 @@ const serializeUser = (user) => {
   const { password, mfaSecret, ...safeUser } = data;
   return safeUser;
 };
+
+const isPasswordHash = (password) => /^\$2[aby]\$/.test(password);
+
+const verifyPassword = async (password, storedPassword) => (
+  isPasswordHash(storedPassword)
+    ? bcrypt.compare(password, storedPassword)
+    : password === storedPassword
+);
 
 class AuthController {
   async login(req, res) {
@@ -28,7 +37,7 @@ class AuthController {
 
     try {
       const user = await User.findOne({ email: req.body.email });
-      if (!user || req.body.password !== user.password) {
+      if (!user || !(await verifyPassword(req.body.password, user.password))) {
         return res.status(401).json({ success: false, message: 'Invalid email or password' });
       }
       if (user.status !== 'Active') {
@@ -84,15 +93,19 @@ class AuthController {
 
     try {
       const user = await User.findById(req.user._id);
-      if (!user || req.body.currentPassword !== user.password) {
+      if (!user || !(await verifyPassword(req.body.currentPassword, user.password))) {
         return res.status(401).json({ success: false, message: 'Current password is incorrect' });
       }
-      await User.updateOne(
-        { _id: user._id },
-        { $set: { password: req.body.newPassword, passwordChangeRequired: false, lastPasswordResetAt: new Date() } }
-      );
+      if (req.body.currentPassword === req.body.newPassword) {
+        return res.status(400).json({ success: false, message: 'New password must be different from the current password' });
+      }
+
+      user.password = await bcrypt.hash(req.body.newPassword, 12);
+      user.passwordChangeRequired = false;
+      user.lastPasswordResetAt = new Date();
+      await user.save();
       await logAudit(req, 'PASSWORD_CHANGED', 'user', user._id);
-      res.json({ success: true, message: 'Password changed successfully' });
+      res.json({ success: true, message: 'Password changed successfully', user: serializeUser(user) });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

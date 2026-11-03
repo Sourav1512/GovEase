@@ -29,15 +29,17 @@ const PreferencesPage = () => {
       const res = await preferenceApi.get(user._id || user.id);
       if (res.success) {
         setPreference(res.preference);
-        setFormData({
-          hobbies: res.preference.hobbies?.join(', ') || '',
-          interests: res.preference.interests?.join(', ') || '',
-          preferredLanguages: res.preference.preferredLanguages?.join(', ') || '',
-          locationPreferences: res.preference.locationPreferences?.join(', ') || '',
-          opportunityTypePreferences: res.preference.opportunityTypePreferences?.join(', ') || '',
-          salaryMin: res.preference.salaryRange?.min || '',
-          salaryMax: res.preference.salaryRange?.max || ''
-        });
+        if (res.preference) {
+          setFormData({
+            hobbies: res.preference.hobbies?.join(', ') || '',
+            interests: res.preference.interests?.join(', ') || '',
+            preferredLanguages: res.preference.preferredLanguages?.join(', ') || '',
+            locationPreferences: res.preference.locationPreferences?.join(', ') || '',
+            opportunityTypePreferences: res.preference.opportunityTypePreferences?.join(', ') || '',
+            salaryMin: res.preference.salaryRange?.min || '',
+            salaryMax: res.preference.salaryRange?.max || ''
+          });
+        }
       }
     } catch (err) {
       setMessage('Failed to load preferences');

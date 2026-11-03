@@ -13,16 +13,19 @@ const opportunityCategories = [
     title: 'Explore Exams',
     description: 'Track upcoming competitive exams, eligibility criteria, and important dates in one place.',
     badge: 'Popular',
+    to: '/exams',
   },
   {
     title: 'Government Jobs',
     description: 'Browse role summaries, application windows, and requirements for public sector careers.',
     badge: 'Fresh',
+    to: '/opportunities?type=Job',
   },
   {
     title: 'Scholarships & Schemes',
     description: 'Discover financial aid and welfare programs that match your profile and background.',
     badge: 'Updated',
+    to: '/opportunities',
   },
 ];
 
@@ -166,12 +169,12 @@ function HomePage() {
           <h2>Everything in one place, tailored for your next step.</h2>
         </div>
         <div className="category-grid">
-          {opportunityCategories.map(({ title, description, badge }) => (
+          {opportunityCategories.map(({ title, description, badge, to }) => (
             <article className="feature-card" key={title}>
               <span className="feature-badge">{badge}</span>
               <h3>{title}</h3>
               <p>{description}</p>
-              <Link to="/login">View details</Link>
+              <Link to={to}>Browse {title.toLowerCase()}</Link>
             </article>
           ))}
         </div>
@@ -191,7 +194,7 @@ function HomePage() {
               </div>
               <h3>{name}</h3>
               <p>{date}</p>
-              <button type="button" className="card-link">Know more</button>
+              <Link to="/exams" className="card-link">Browse exams</Link>
             </article>
           ))}
         </div>
@@ -210,7 +213,7 @@ function HomePage() {
               <p>{org}</p>
               <div className="meta-row">
                 <span>{deadline}</span>
-                <button type="button">View role</button>
+                <Link to="/opportunities?type=Job">Browse jobs</Link>
               </div>
             </article>
           ))}
@@ -228,7 +231,7 @@ function HomePage() {
               <span className="scheme-tag">{category}</span>
               <h3>{title}</h3>
               <p>{label}</p>
-              <button type="button" className="card-link">Check eligibility</button>
+              <Link to="/opportunities" className="card-link">Browse opportunities</Link>
             </article>
           ))}
         </div>
@@ -361,15 +364,15 @@ function HomePage() {
         <div className="footer-links">
           <div>
             <h4>Platform</h4>
-            <a href="#explore">Exams</a>
-            <a href="#explore">Jobs</a>
-            <a href="#explore">Scholarships</a>
+            <Link to="/exams">Exams</Link>
+            <Link to="/opportunities?type=Job">Jobs</Link>
+            <Link to="/opportunities?type=Scholarship">Scholarships</Link>
           </div>
           <div>
             <h4>Company</h4>
-            <a href="#about">About</a>
-            <a href="#how-it-works">How it works</a>
-            <a href="/login">Login</a>
+            <Link to="/#about">About</Link>
+            <Link to="/#how-it-works">How it works</Link>
+            <Link to="/login">Login</Link>
           </div>
         </div>
       </footer>

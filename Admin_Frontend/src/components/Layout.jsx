@@ -1,8 +1,9 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: DashboardIcon },
+  { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
   { path: '/users', label: 'Users', icon: UsersIcon },
   { path: '/eligibility-rules', label: 'Eligibility Rules', icon: RulesIcon },
   { path: '/exams', label: 'Exams', icon: ExamsIcon },
@@ -80,14 +81,29 @@ function ApplicationsIcon({ className }) {
 export default function Layout() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     await logout();
+    navigate('/login', { replace: true });
   };
 
   return (
     <div className="layout">
-      <aside className="sidebar" role="navigation" aria-label="Main navigation">
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Close navigation menu"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} role="navigation" aria-label="Main navigation">
         <div className="sidebar-header">
           <h1>GovEase Admin</h1>
         </div>
@@ -100,6 +116,7 @@ export default function Layout() {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={() => setSidebarOpen(false)}
                 className={`nav-item ${location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path)) ? 'active' : ''}`}
               >
                 <Icon className="nav-icon" />
@@ -125,10 +142,24 @@ export default function Layout() {
       <main className="main-content">
         <header className="header" role="banner">
           <div className="header-left">
+            <button
+              type="button"
+              className="sidebar-toggle"
+              aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={sidebarOpen}
+              onClick={() => setSidebarOpen((open) => !open)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
             <h1 className="page-title">{getPageTitle(location.pathname)}</h1>
           </div>
           <div className="header-right">
-            <button onClick={handleLogout} className="btn btn-ghost btn-sm" style={{ padding: '0.375rem 0.75rem' }}>
+            <Link to="/password-change" className="btn btn-ghost btn-sm">
+              Change password
+            </Link>
+            <button type="button" onClick={handleLogout} className="btn btn-ghost btn-sm" style={{ padding: '0.375rem 0.75rem' }}>
               Logout
             </button>
           </div>
@@ -144,6 +175,7 @@ export default function Layout() {
 function getPageTitle(pathname) {
   const titles = {
     '/': 'Dashboard',
+    '/dashboard': 'Dashboard',
     '/users': 'Users',
     '/eligibility-rules': 'Eligibility Rules',
     '/exams': 'Exams',

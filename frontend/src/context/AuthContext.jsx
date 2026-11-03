@@ -88,12 +88,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logoutUser = async () => {
+    const logoutRequest = authApi.logout();
+    clearSession();
     try {
-      await authApi.logout();
+      await logoutRequest;
     } catch (error) {
       console.error('Logout error:', error);
     }
-    clearSession();
   };
 
   const value = {

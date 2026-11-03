@@ -17,11 +17,13 @@ class AuthController {
       .trim()
       .isLength({ min: 2 })
       .withMessage('Full name must be at least 2 characters')
-      .matches(/^[A-Za-z\s]+$/)
-      .withMessage('Full name must contain only alphabetic characters and spaces'),
+      .matches(/^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$/)
+      .withMessage('Full name can contain letters, spaces, apostrophes, hyphens, and periods only'),
     body('phone')
-      .optional()
-      .isMobilePhone()
+      .optional({ values: 'falsy' })
+      .trim()
+      .customSanitizer((value) => value ? value.replace(/\s+/g, '') : value)
+      .isMobilePhone('en-IN', { strictMode: false })
       .withMessage('Please provide a valid phone number')
   ];
 

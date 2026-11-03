@@ -60,7 +60,7 @@
 .card-link,
 .site-footer a,
 .feature-card a,
-.job-card button {
+.job-card a {
   text-decoration: none;
   border-radius: 12px;
   transition: all 0.2s ease;
@@ -369,7 +369,7 @@
 
 .feature-card a,
 .card-link,
-.job-card button {
+.job-card a {
   margin-top: 18px;
   display: inline-flex;
   align-items: center;
@@ -429,14 +429,18 @@
   font-size: 0.76rem;
 }
 
-.meta-row button {
+.meta-row a {
+  display: inline-flex;
+  align-items: center;
   background: #edf3f8;
   color: #193b5a;
-  border: 0;
   border-radius: 8px;
   padding: 8px 12px;
   font-weight: 700;
-  cursor: pointer;
+}
+
+.home-page section[id] {
+  scroll-margin-top: 88px;
 }
 
 .scheme-tag {
