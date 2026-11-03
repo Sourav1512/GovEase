@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import PersonalInfo from '../components/profile/PersonalInfo';
 import Education from '../components/profile/Education';
 import Experience from '../components/profile/Experience';
@@ -17,8 +18,16 @@ const sections = [
 ];
 
 const ProfileLayout = () => {
-  const [activeSection, setActiveSection] = useState('personal');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedSection = searchParams.get('section');
+  const [activeSection, setActiveSection] = useState(
+    sections.some((section) => section.id === requestedSection) ? requestedSection : 'personal'
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    setActiveSection(sections.some((section) => section.id === requestedSection) ? requestedSection : 'personal');
+  }, [requestedSection]);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -46,7 +55,7 @@ const ProfileLayout = () => {
             <button
               key={section.id}
               className={`nav-item ${activeSection === section.id ? 'active' : ''}`}
-              onClick={() => setActiveSection(section.id)}
+              onClick={() => setSearchParams(section.id === 'personal' ? {} : { section: section.id })}
             >
               <span className="nav-icon">{section.icon}</span>
               {!sidebarCollapsed && <span className="nav-label">{section.label}</span>}

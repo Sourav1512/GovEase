@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import './Login.css';
 
 const Login = () => {
@@ -11,6 +11,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { loginUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -19,7 +20,8 @@ const Login = () => {
 
     try {
       await loginUser(email, password);
-      navigate('/dashboard');
+      const from = location.state?.from;
+      navigate(from ? `${from.pathname || ''}${from.search || ''}${from.hash || ''}` : '/dashboard', { replace: true });
     } catch (err) {
       setError(err.message || 'Invalid email or password.');
     } finally {
@@ -65,9 +67,6 @@ const Login = () => {
                 {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
-          </div>
-          <div className="form-row">
-            <Link to="/forgot-password" className="subtle-link">Forgot password?</Link>
           </div>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}

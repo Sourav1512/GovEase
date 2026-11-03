@@ -1,251 +1,182 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { examsApi, opportunitiesApi } from '../api/examsApi';
 import './HomePage.css';
 
-const stats = [
-  { label: 'Citizens helped', value: '8.4L+' },
-  { label: 'Exams tracked', value: '320+' },
-  { label: 'Scholarships matched', value: '140+' },
-  { label: 'Jobs monitored', value: '260+' },
-];
-
-const opportunityCategories = [
-  {
-    title: 'Explore Exams',
-    description: 'Track upcoming competitive exams, eligibility criteria, and important dates in one place.',
-    badge: 'Popular',
-    to: '/exams',
-  },
-  {
-    title: 'Government Jobs',
-    description: 'Browse role summaries, application windows, and requirements for public sector careers.',
-    badge: 'Fresh',
-    to: '/opportunities?type=Job',
-  },
-  {
-    title: 'Scholarships & Schemes',
-    description: 'Discover financial aid and welfare programs that match your profile and background.',
-    badge: 'Updated',
-    to: '/opportunities',
-  },
-];
-
-const examCards = [
-  { name: 'SSC CGL', stage: 'Tier I', date: '12 Oct 2026', status: 'Application open' },
-  { name: 'UPSC CSE', stage: 'Prelims', date: '18 Nov 2026', status: 'Registration live' },
-  { name: 'IBPS PO', stage: 'Prelims', date: '02 Dec 2026', status: 'New notice' },
-  { name: 'RRB NTPC', stage: 'Computer-Based', date: '24 Dec 2026', status: 'Admit card soon' },
-];
-
-const jobCards = [
-  { title: 'Junior Secretariat Assistant', org: 'Ministry of Home Affairs', type: 'Central Government', deadline: 'Apply by 10 Oct' },
-  { title: 'State Audit Officer', org: 'State Public Service Commission', type: 'State Government', deadline: 'Apply by 18 Oct' },
-  { title: 'Technical Officer', org: 'Public Sector Undertaking', type: 'PSU', deadline: 'Apply by 24 Oct' },
-];
-
-const schemeCards = [
-  { title: 'Post-Matric Scholarship', category: 'Education Support', label: 'For eligible students' },
-  { title: 'Skill Development Assistance', category: 'Career Growth', label: 'Training-linked support' },
-  { title: 'Women Empowerment Scheme', category: 'Social Welfare', label: 'Support under priority category' },
-];
-
 const steps = [
-  { title: 'Create your profile', text: 'Add your education, experience, categories, and documents once for faster applications.' },
-  { title: 'Discover matches', text: 'Get curated exam, job, and scheme suggestions based on your profile and preferences.' },
-  { title: 'Apply with confidence', text: 'Fill secure form-based applications with auto-filled details and document tracking.' },
-  { title: 'Track progress', text: 'Monitor deadlines, statuses, document checks, and updates from one dashboard.' },
-];
-
-const reasons = [
-  'Single portal for exams, jobs, scholarships, and schemes',
-  'Dynamic application support with reusable profile data',
-  'Clear timeline and application status tracking',
-  'Designed for trust, clarity, and accessibility',
+  ['01', 'Create your account', 'Set up one secure account to manage your citizen-service journey.'],
+  ['02', 'Build your profile', 'Add the information and documents requested by the opportunities you follow.'],
+  ['03', 'Find an opportunity', 'Browse published exams, jobs, scholarships, and schemes.'],
+  ['04', 'Apply and track', 'Use the available application forms and review submitted applications.'],
 ];
 
 const faqs = [
-  {
-    question: 'Is GovEase AI only for citizens?',
-    answer: 'GovEase AI supports citizens with a user portal and a dedicated admin workspace for managing opportunities, forms, and platform workflows.',
-  },
-  {
-    question: 'Can I reuse my profile across forms?',
-    answer: 'Yes. The platform stores your education, work history, certifications, and personal details so you can apply faster without re-entering information.',
-  },
-  {
-    question: 'Do I need to maintain multiple accounts?',
-    answer: 'No. One profile can help you track exams, central and state jobs, scholarships, and scheme applications from a single dashboard.',
-  },
-  {
-    question: 'How does the application tracking work?',
-    answer: 'Each application moves through stages such as applied, under review, approved, or rejected, with activity updates visible in the citizen dashboard.',
-  },
+  ['What can I find on GovEase?', 'Published government exams and opportunities, including jobs, scholarships, schemes, and related application information.'],
+  ['Can I track my applications?', 'Sign in to view applications submitted through GovEase and their latest status.'],
+  ['Is my profile reusable?', 'Your saved profile information can be used by supported application forms. Each form may request additional details.'],
+  ['Where do opportunity details come from?', 'Listings are loaded from the platform database. Availability depends on what administrators have published.'],
 ];
 
+const dateLabel = (value) => {
+  if (!value) return 'Deadline not listed';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Deadline not listed' : `Apply by ${date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+};
+
 function HomePage() {
+  const navigate = useNavigate();
+  const [searchText, setSearchText] = useState('');
+  const [exams, setExams] = useState([]);
+  const [opportunities, setOpportunities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([examsApi.list(), opportunitiesApi.list()])
+      .then(([examResponse, opportunityResponse]) => {
+        if (!active) return;
+        if (!examResponse.success || !opportunityResponse.success) {
+          setLoadError('Some listings are temporarily unavailable. Please open a service page to try again.');
+          return;
+        }
+        setExams(examResponse.items || []);
+        setOpportunities(opportunityResponse.items || []);
+      })
+      .catch(() => {
+        if (active) setLoadError('Listings are temporarily unavailable. Please try again later.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  const countType = (type) => opportunities.filter((item) => item.opportunityType?.toLowerCase() === type.toLowerCase()).length;
+  const featured = opportunities.slice(0, 3);
+  const handleSearch = (event) => {
+    event.preventDefault();
+    const query = searchText.trim();
+    navigate(query ? `/opportunities?q=${encodeURIComponent(query)}` : '/opportunities');
+  };
+
   return (
     <main className="home-page">
       <section className="hero-section">
         <div className="hero-copy">
-          <span className="eyebrow">Trusted government opportunity platform</span>
-          <h1>Your Gateway to Government Opportunities.</h1>
-          <p>
-            Discover government exams, job opportunities, scholarships and welfare schemes.
-            Manage your applications and complete forms through one simple platform.
-          </p>
+          <span className="eyebrow">One reliable place to plan your next step</span>
+          <h1>Your gateway to government opportunities.</h1>
+          <p>Discover published government exams, jobs, scholarships and welfare schemes. Manage supported applications through one clear, secure platform.</p>
           <div className="hero-actions">
-            <a href="#explore" className="primary-btn">Explore Opportunities</a>
-            <Link to="/register" className="secondary-btn">Create Your Account</Link>
+            <Link to="/opportunities" className="primary-btn">Explore opportunities</Link>
+            <Link to="/register" className="secondary-btn">Create your account</Link>
           </div>
+          <form className="homepage-search" onSubmit={handleSearch} role="search">
+            <label htmlFor="homepage-opportunity-search">Search published opportunities</label>
+            <div>
+              <input id="homepage-opportunity-search" type="search" value={searchText} onChange={(event) => setSearchText(event.target.value)} placeholder="Job, scholarship, organisation…" />
+              <button type="submit">Search</button>
+            </div>
+          </form>
           <ul className="trust-points">
-            <li>Secure profile management</li>
-            <li>Opportunity tracking</li>
-            <li>Application guidance</li>
+            <li>One citizen profile</li>
+            <li>Published listings</li>
+            <li>Application status tracking</li>
           </ul>
         </div>
-
-        <div className="hero-visual" aria-label="GovEase dashboard preview">
-          <div className="preview-window">
-            <div className="preview-header">
-              <span className="dot dot-red" />
-              <span className="dot dot-yellow" />
-              <span className="dot dot-green" />
-            </div>
-            <div className="preview-body">
-              <aside className="sidebar-mini">
-                <span className="mini-pill active">Overview</span>
-                <span className="mini-pill">Exams</span>
-                <span className="mini-pill">Jobs</span>
-                <span className="mini-pill">Schemes</span>
-              </aside>
-              <div className="preview-content">
-                <div className="mini-card highlight-card">
-                  <p>Profile completion</p>
-                  <strong>82%</strong>
-                </div>
-                <div className="mini-grid">
-                  <div className="mini-card">
-                    <small>Applied</small>
-                    <strong>07</strong>
-                  </div>
-                  <div className="mini-card">
-                    <small>Under review</small>
-                    <strong>03</strong>
-                  </div>
-                </div>
-                <div className="timeline-card">
-                  <div className="timeline-row">
-                    <span className="timeline-dot success" />
-                    <div>
-                      <strong>SSC CGL</strong>
-                      <small>Application submitted</small>
-                    </div>
-                  </div>
-                  <div className="timeline-row">
-                    <span className="timeline-dot warning" />
-                    <div>
-                      <strong>IBPS PO</strong>
-                      <small>Document check pending</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        <div className="hero-visual" aria-label="Explore government services">
+          <div className="hero-editorial-panel">
+            <span className="hero-panel-kicker">Your next step, made clearer</span>
+            <p>Explore services with important details and application information together.</p>
+            <div className="hero-panel-links">
+              <Link to="/exams">Exams <span aria-hidden="true">↗</span></Link>
+              <Link to="/opportunities?type=Job">Jobs <span aria-hidden="true">↗</span></Link>
+              <Link to="/opportunities?type=Scholarship">Scholarships <span aria-hidden="true">↗</span></Link>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="stats-section">
-        {stats.map(({ label, value }) => (
-          <div className="stat-item" key={label}>
-            <strong>{value}</strong>
-            <span>{label}</span>
+      <section className="stats-section" aria-label="Current published listings">
+        {[
+          { label: 'Published exams', value: exams.length },
+          { label: 'Open opportunities', value: opportunities.length },
+          { label: 'Scholarships', value: countType('Scholarship') },
+          { label: 'Government jobs', value: countType('Job') },
+        ].map((stat) => (
+          <div className="stat-item" key={stat.label}>
+            <strong>{loading ? '—' : stat.value}</strong>
+            <span>{stat.label}</span>
           </div>
         ))}
       </section>
 
+      {loadError && <p className="homepage-data-message" role="status">{loadError}</p>}
+
       <section id="explore" className="content-section">
         <div className="section-header">
-          <span className="section-kicker">Explore government opportunities</span>
-          <h2>Everything in one place, tailored for your next step.</h2>
+          <span className="section-kicker">Explore services</span>
+          <h2>Find the information relevant to your next move.</h2>
         </div>
         <div className="category-grid">
-          {opportunityCategories.map(({ title, description, badge, to }) => (
+          {[
+            ['Government exams', 'Review published exam notices, eligibility and important dates.', '/exams'],
+            ['Government jobs', 'Browse job opportunities published by government and public-sector organisations.', '/opportunities?type=Job'],
+            ['Scholarships', 'Find published scholarship opportunities and application information.', '/opportunities?type=Scholarship'],
+            ['Government schemes', 'Explore available scheme listings and their requirements.', '/opportunities?type=Scheme'],
+          ].map(([title, description, to]) => (
             <article className="feature-card" key={title}>
-              <span className="feature-badge">{badge}</span>
+              <span className="feature-index">GovEase / Services</span>
               <h3>{title}</h3>
               <p>{description}</p>
-              <Link to={to}>Browse {title.toLowerCase()}</Link>
+              <Link to={to}>Browse listings <span aria-hidden="true">→</span></Link>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="content-section neutral-section">
+      <section className="content-section neutral-section featured-section">
         <div className="section-header">
-          <span className="section-kicker">Latest government exams</span>
-          <h2>Stay informed about key exam timelines.</h2>
+          <span className="section-kicker">Recently published</span>
+          <h2>Opportunities from the live listings.</h2>
+          <p>Details shown here are loaded from GovEase. Check each listing for current eligibility and deadlines.</p>
         </div>
-        <div className="card-grid">
-          {examCards.map(({ name, stage, date, status }) => (
-            <article className="info-card" key={name}>
-              <div className="card-topline">
-                <span>{stage}</span>
-                <span className="status-pill">{status}</span>
-              </div>
-              <h3>{name}</h3>
-              <p>{date}</p>
-              <Link to="/exams" className="card-link">Browse exams</Link>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="content-section">
-        <div className="section-header">
-          <span className="section-kicker">Government jobs</span>
-          <h2>Track roles from central, state, and public sector hiring.</h2>
-        </div>
-        <div className="card-grid compact-grid">
-          {jobCards.map(({ title, org, type, deadline }) => (
-            <article className="job-card" key={title}>
-              <small>{type}</small>
-              <h3>{title}</h3>
-              <p>{org}</p>
-              <div className="meta-row">
-                <span>{deadline}</span>
-                <Link to="/opportunities?type=Job">Browse jobs</Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="content-section neutral-section">
-        <div className="section-header">
-          <span className="section-kicker">Scholarships and schemes</span>
-          <h2>Discover support opportunities built around your profile.</h2>
-        </div>
-        <div className="card-grid">
-          {schemeCards.map(({ title, category, label }) => (
-            <article className="info-card" key={title}>
-              <span className="scheme-tag">{category}</span>
-              <h3>{title}</h3>
-              <p>{label}</p>
-              <Link to="/opportunities" className="card-link">Browse opportunities</Link>
-            </article>
-          ))}
-        </div>
+        {loading ? (
+          <div className="homepage-listing-state" role="status">Loading published opportunities…</div>
+        ) : featured.length ? (
+          <div className="card-grid">
+            {featured.map((item) => (
+              <article className="info-card" key={item._id}>
+                <span className="scheme-tag">{item.opportunityType || 'Opportunity'}</span>
+                <h3>{item.title}</h3>
+                <p>{item.organization || 'Organization not listed'}</p>
+                <div className="featured-meta">
+                  <span>{dateLabel(item.applicationDeadline)}</span>
+                  {item.location && <span>{item.location}</span>}
+                </div>
+                <Link to={`/opportunities/${item._id}`} className="card-link">View details <span aria-hidden="true">→</span></Link>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="homepage-listing-state">
+            <h3>No published opportunities yet</h3>
+            <p>When new listings are published, they will appear here.</p>
+            <Link to="/exams">Browse available exams</Link>
+          </div>
+        )}
+        {featured.length > 0 && <div className="section-action"><Link to="/opportunities" className="text-link">View all opportunities <span aria-hidden="true">→</span></Link></div>}
       </section>
 
       <section id="how-it-works" className="content-section">
         <div className="section-header">
-          <span className="section-kicker">How GovEase works</span>
-          <h2>From discovery to application in four simple steps.</h2>
+          <span className="section-kicker">How it works</span>
+          <h2>A straightforward path from discovery to tracking.</h2>
         </div>
         <div className="steps-grid">
-          {steps.map(({ title, text }, index) => (
-            <article className="step-card" key={title}>
-              <span className="step-number">0{index + 1}</span>
+          {steps.map(([number, title, text]) => (
+            <article className="step-card" key={number}>
+              <span className="step-number">{number}</span>
               <h3>{title}</h3>
               <p>{text}</p>
             </article>
@@ -255,77 +186,23 @@ function HomePage() {
 
       <section id="about" className="content-section neutral-section why-section">
         <div className="section-header">
-          <span className="section-kicker">Why choose GovEase</span>
-          <h2>Built for clarity, accessibility, and smarter decisions.</h2>
+          <span className="section-kicker">About GovEase</span>
+          <h2>Public-service information, organised around citizens.</h2>
+          <p>GovEase brings supported government opportunity listings, citizen profile tools and application tracking into one platform. Always refer to the official notice for authoritative requirements and deadlines.</p>
         </div>
         <div className="why-grid">
           <div className="benefit-list">
-            {reasons.map((item) => (
-              <div key={item} className="benefit-item">
-                <span className="checkmark">✓</span>
-                <p>{item}</p>
-              </div>
-            ))}
+            {[
+              'Browse several types of published opportunities in one place',
+              'Keep profile information available for supported application forms',
+              'Review submitted application statuses from your account',
+              'Find the details and dates supplied with each listing',
+            ].map((item) => <div key={item} className="benefit-item"><span className="checkmark" aria-hidden="true">✓</span><p>{item}</p></div>)}
           </div>
-          <div className="micro-panel">
-            <div className="micro-box">
-              <small>Saved search</small>
-              <strong>Junior officer roles</strong>
-            </div>
-            <div className="micro-box">
-              <small>Upcoming deadline</small>
-              <strong>12 days left</strong>
-            </div>
-            <div className="micro-box success-box">
-              <small>Application status</small>
-              <strong>Under review</strong>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="content-section application-preview">
-        <div className="section-header left-aligned">
-          <span className="section-kicker">Application management</span>
-          <h2>Keep track of every opportunity without losing the thread.</h2>
-        </div>
-        <div className="management-dashboard">
-          <div className="management-summary">
-            <div className="summary-box">
-              <span>Total applications</span>
-              <strong>14</strong>
-            </div>
-            <div className="summary-box">
-              <span>Under review</span>
-              <strong>04</strong>
-            </div>
-            <div className="summary-box success">
-              <span>Approved</span>
-              <strong>03</strong>
-            </div>
-          </div>
-          <div className="application-list">
-            <div className="application-row">
-              <div>
-                <strong>SSC CGL 2026</strong>
-                <small>Submitted 2 days ago</small>
-              </div>
-              <span className="badge neutral">Applied</span>
-            </div>
-            <div className="application-row">
-              <div>
-                <strong>UPSC CSE</strong>
-                <small>Document verification pending</small>
-              </div>
-              <span className="badge warning">Under review</span>
-            </div>
-            <div className="application-row">
-              <div>
-                <strong>Post-Matric Scholarship</strong>
-                <small>Approved by nodal office</small>
-              </div>
-              <span className="badge success">Approved</span>
-            </div>
+          <div className="about-note">
+            <span>Important</span>
+            <p>GovEase helps organise information; the official department notice remains the source of truth for eligibility, documents and deadlines.</p>
+            <Link to="/opportunities">Explore current listings <span aria-hidden="true">→</span></Link>
           </div>
         </div>
       </section>
@@ -333,11 +210,11 @@ function HomePage() {
       <section className="content-section faq-section">
         <div className="section-header">
           <span className="section-kicker">Frequently asked questions</span>
-          <h2>Questions citizens ask before they start.</h2>
+          <h2>Useful details before you begin.</h2>
         </div>
         <div className="faq-list">
-          {faqs.map(({ question, answer }) => (
-            <details key={question} className="faq-item" open={question === faqs[0].question}>
+          {faqs.map(([question, answer], index) => (
+            <details key={question} className="faq-item" open={index === 0}>
               <summary>{question}</summary>
               <p>{answer}</p>
             </details>
@@ -347,33 +224,23 @@ function HomePage() {
 
       <section className="cta-banner">
         <div>
-          <span className="section-kicker light">Ready to begin?</span>
-          <h2>Build your profile and take the next step with confidence.</h2>
+          <span className="section-kicker light">Start when you are ready</span>
+          <h2>Explore opportunities and keep your applications organised.</h2>
         </div>
         <div className="cta-actions">
-          <Link to="/register" className="primary-btn">Create Your Account</Link>
+          <Link to="/register" className="primary-btn">Create your account</Link>
           <Link to="/login" className="secondary-btn light-btn">Login</Link>
         </div>
       </section>
 
       <footer className="site-footer">
         <div className="footer-brand">
-          <strong>GovEase AI</strong>
-          <p>Helping citizens discover and manage government opportunities with clarity.</p>
+          <strong>GovEase</strong>
+          <p>Government opportunity information and application tools for citizens.</p>
         </div>
         <div className="footer-links">
-          <div>
-            <h4>Platform</h4>
-            <Link to="/exams">Exams</Link>
-            <Link to="/opportunities?type=Job">Jobs</Link>
-            <Link to="/opportunities?type=Scholarship">Scholarships</Link>
-          </div>
-          <div>
-            <h4>Company</h4>
-            <Link to="/#about">About</Link>
-            <Link to="/#how-it-works">How it works</Link>
-            <Link to="/login">Login</Link>
-          </div>
+          <div><h4>Services</h4><Link to="/exams">Exams</Link><Link to="/opportunities?type=Job">Government jobs</Link><Link to="/opportunities?type=Scholarship">Scholarships</Link><Link to="/opportunities?type=Scheme">Schemes</Link></div>
+          <div><h4>Platform</h4><Link to="/#about">About</Link><Link to="/#how-it-works">How it works</Link><Link to="/login">Login</Link></div>
         </div>
       </footer>
     </main>
